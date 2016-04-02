@@ -62,7 +62,7 @@ public class CameraViewController: UIViewController {
     }()
     
     let cameraButton : UIButton = {
-        let button = UIButton()
+        let button = UIButton(frame: CGRect(x: 0, y: 0, width: 64, height: 64))
         button.translatesAutoresizingMaskIntoConstraints = false
         button.setImage(UIImage(named: "cameraButton",
             inBundle: CameraGlobals.shared.bundle,
@@ -106,7 +106,7 @@ public class CameraViewController: UIViewController {
     }()
     
     let flashButton : UIButton = {
-        let button = UIButton()
+        let button = UIButton(frame: CGRect(x: 0, y: 0, width: 44, height: 44))
         button.translatesAutoresizingMaskIntoConstraints = false
         button.setImage(UIImage(named: "flashAutoIcon",
             inBundle: CameraGlobals.shared.bundle,
@@ -154,6 +154,9 @@ public class CameraViewController: UIViewController {
     }
     
     override public func updateViewConstraints() {
+        
+        view.layoutMargins = UIEdgeInsets(top: 16, left: 16, bottom: 16, right: 16)
+        
         if !didUpdateViews {
             configCameraViewConstraints()
             configCameraButtonConstraints()
@@ -169,131 +172,140 @@ public class CameraViewController: UIViewController {
     
     func configCameraViewConstraints() {
         view.addConstraint(NSLayoutConstraint(item: cameraView,
-            attribute: NSLayoutAttribute.Left,
+            attribute: .Left,
             relatedBy: NSLayoutRelation.Equal,
             toItem: view,
-            attribute: NSLayoutAttribute.Left,
+            attribute: .Left,
             multiplier: 1.0, constant: 0))
         view.addConstraint(NSLayoutConstraint(item: cameraView,
-            attribute: NSLayoutAttribute.Right,
+            attribute: .Right,
             relatedBy: NSLayoutRelation.Equal,
             toItem: view,
-            attribute: NSLayoutAttribute.Right,
+            attribute: .Right,
             multiplier: 1.0, constant: 0))
         view.addConstraint(NSLayoutConstraint(item: cameraView,
-            attribute: NSLayoutAttribute.Top,
+            attribute: .Top,
             relatedBy: NSLayoutRelation.Equal,
             toItem: view,
-            attribute: NSLayoutAttribute.Top,
+            attribute: .Top,
             multiplier: 1.0, constant: 0))
         view.addConstraint(NSLayoutConstraint(item: cameraView,
-            attribute: NSLayoutAttribute.Bottom,
+            attribute: .Bottom,
             relatedBy: NSLayoutRelation.Equal,
             toItem: view,
-            attribute: NSLayoutAttribute.Bottom,
+            attribute: .Bottom,
             multiplier: 1.0, constant: 0))
     }
     
     func configCameraButtonConstraints() {
         view.addConstraint(NSLayoutConstraint(item: cameraButton,
-            attribute: NSLayoutAttribute.CenterX,
+            attribute: .CenterX,
             relatedBy: NSLayoutRelation.Equal,
             toItem: view,
-            attribute: NSLayoutAttribute.CenterX,
+            attribute: .CenterX,
             multiplier: 1.0, constant: 0))
         view.addConstraint(NSLayoutConstraint(item: cameraButton,
-            attribute: NSLayoutAttribute.Bottom,
+            attribute: .Bottom,
             relatedBy: NSLayoutRelation.Equal,
             toItem: view,
-            attribute: NSLayoutAttribute.Bottom,
-            multiplier: 1.0, constant: -8))
+            attribute: .BottomMargin,
+            multiplier: 1.0, constant: -view.layoutMargins.bottom))
     }
     
     func configSwapButtonConstraints() {
         view.addConstraint(NSLayoutConstraint(item: swapButton,
-            attribute: NSLayoutAttribute.Left,
+            attribute: .CenterY,
             relatedBy: NSLayoutRelation.Equal,
             toItem: cameraButton,
-            attribute: NSLayoutAttribute.Right,
-            multiplier: 1.0, constant: 8))
-        view.addConstraint(NSLayoutConstraint(item: swapButton,
-            attribute: NSLayoutAttribute.CenterY,
-            relatedBy: NSLayoutRelation.Equal,
-            toItem: cameraButton,
-            attribute: NSLayoutAttribute.CenterY,
+            attribute: .CenterY,
             multiplier: 1.0, constant: 0))
     }
     
     func configCloseButtonConstraints() {
         view.addConstraint(NSLayoutConstraint(item: closeButton,
-            attribute: NSLayoutAttribute.Left,
+            attribute: .Left,
             relatedBy: NSLayoutRelation.Equal,
             toItem: view,
-            attribute: NSLayoutAttribute.Left,
-            multiplier: 1.0, constant: 16))
+            attribute: .LeftMargin,
+            multiplier: 1.0, constant: 0))
         view.addConstraint(NSLayoutConstraint(item: closeButton,
-            attribute: NSLayoutAttribute.CenterY,
+            attribute: .CenterY,
             relatedBy: NSLayoutRelation.Equal,
             toItem: cameraButton,
-            attribute: NSLayoutAttribute.CenterY,
+            attribute: .CenterY,
             multiplier: 1.0, constant: 0))
     }
     
     func configLibraryButtonConstraints() {
         view.addConstraint(NSLayoutConstraint(item: libraryButton,
-            attribute: NSLayoutAttribute.Left,
+            attribute: .Right,
             relatedBy: NSLayoutRelation.Equal,
-            toItem: swapButton,
-            attribute: NSLayoutAttribute.Right,
-            multiplier: 1.0, constant: 8))
+            toItem: view,
+            attribute: .RightMargin,
+            multiplier: 1.0, constant: 0))
         view.addConstraint(NSLayoutConstraint(item: libraryButton,
-            attribute: NSLayoutAttribute.CenterY,
+            attribute: .CenterY,
             relatedBy: NSLayoutRelation.Equal,
             toItem: cameraButton,
-            attribute: NSLayoutAttribute.CenterY,
+            attribute: .CenterY,
             multiplier: 1.0, constant: 0))
+        view.addConstraint(NSLayoutConstraint(item: libraryButton,
+            attribute: .Left,
+            relatedBy: NSLayoutRelation.Equal,
+            toItem: swapButton,
+            attribute: .Right,
+            multiplier: 1.0, constant: view.layoutMargins.right))
     }
     
     func configFlashButtonConstraints() {
         view.addConstraint(NSLayoutConstraint(item: flashButton,
-            attribute: NSLayoutAttribute.Top,
+            attribute: .Top,
             relatedBy: NSLayoutRelation.Equal,
             toItem: view,
-            attribute: NSLayoutAttribute.Top,
-            multiplier: 1.0, constant: 8))
+            attribute: .TopMargin,
+            multiplier: 1.0, constant: view.layoutMargins.top))
         view.addConstraint(NSLayoutConstraint(item: flashButton,
-            attribute: NSLayoutAttribute.Right,
+            attribute: .Right,
             relatedBy: NSLayoutRelation.Equal,
             toItem: view,
-            attribute: NSLayoutAttribute.Right,
-            multiplier: 1.0, constant: -8))
+            attribute: .RightMargin,
+            multiplier: 1.0, constant: 0))
     }
     
     func configCameraOverlayConstraints() {
         view.addConstraint(NSLayoutConstraint(item: cameraOverlay,
-            attribute: NSLayoutAttribute.Left,
+            attribute: .Left,
             relatedBy: NSLayoutRelation.Equal,
             toItem: view,
-            attribute: NSLayoutAttribute.Left,
-            multiplier: 1.0, constant: 15))
+            attribute: .LeftMargin,
+            multiplier: 1.0, constant: 0))
         view.addConstraint(NSLayoutConstraint(item: cameraOverlay,
-            attribute: NSLayoutAttribute.Right,
+            attribute: .Right,
             relatedBy: NSLayoutRelation.Equal,
             toItem: view,
-            attribute: NSLayoutAttribute.Right,
-            multiplier: 1.0, constant: -15))
+            attribute: .RightMargin,
+            multiplier: 1.0, constant: 0))
         view.addConstraint(NSLayoutConstraint(item: cameraOverlay,
-            attribute: NSLayoutAttribute.Height,
+            attribute: .Width,
             relatedBy: NSLayoutRelation.Equal,
             toItem: cameraOverlay,
-            attribute: NSLayoutAttribute.Width,
+            attribute: .Height,
             multiplier: 1.0, constant: 0))
         view.addConstraint(NSLayoutConstraint(item: cameraOverlay,
-            attribute: NSLayoutAttribute.CenterY,
+            attribute: .CenterX,
             relatedBy: NSLayoutRelation.Equal,
             toItem: view,
-            attribute: NSLayoutAttribute.CenterY,
+            attribute: .CenterX,
             multiplier: 1.0, constant: 0))
+        
+        let centerYOffset = abs((flashButton.frame.height + view.layoutMargins.top) - (cameraButton.frame.height + view.layoutMargins.bottom))
+        
+        view.addConstraint(NSLayoutConstraint(item: cameraOverlay,
+            attribute: .CenterY,
+            relatedBy: NSLayoutRelation.Equal,
+            toItem: view,
+            attribute: .CenterY,
+            multiplier: 1.0, constant: -centerYOffset))
     }
     
     public override func viewDidLoad() {
