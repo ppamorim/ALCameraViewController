@@ -23,16 +23,18 @@ public extension CameraViewController {
         
         imagePicker.onSelectionComplete = { asset in
             if let asset = asset {
-                let confirmController = ConfirmViewController(asset: asset, allowsCropping: croppingEnabled)
-                confirmController.onComplete = { image, asset in
+                let confirmViewController = ConfirmViewController()
+                confirmViewController.asset = asset
+                confirmViewController.allowsCropping = croppingEnabled
+                confirmViewController.onComplete = { image, asset in
                     if let image = image, asset = asset {
                         completion(image, asset)
                     } else {
                         imagePicker.dismissViewControllerAnimated(true, completion: nil)
                     }
                 }
-                confirmController.modalTransitionStyle = UIModalTransitionStyle.CrossDissolve
-                imagePicker.presentViewController(confirmController, animated: true, completion: nil)
+                confirmViewController.modalTransitionStyle = UIModalTransitionStyle.CrossDissolve
+                imagePicker.presentViewController(confirmViewController, animated: true, completion: nil)
             } else {
                 completion(nil, nil)
             }
@@ -475,7 +477,9 @@ public class CameraViewController: UIViewController {
     internal func layoutCameraResult(asset: PHAsset) {
         cameraView.stopSession()
         
-        let confirmViewController = ConfirmViewController(asset: asset, allowsCropping: allowCropping)
+        let confirmViewController = ConfirmViewController()
+        confirmViewController.asset = asset
+        confirmViewController.allowsCropping = allowCropping
         
         confirmViewController.onComplete = { image, asset in
             if let image = image, asset = asset {
