@@ -9,14 +9,19 @@
 import UIKit
 import Photos
 
-<<<<<<< HEAD
 class ConfirmViewController: UIViewController {
-  
+    
     var didUpdateViews = false
     var allowsCropping = false
+    var animationRunning = false
     
+    var lastInterfaceOrientation : UIInterfaceOrientation?
     var onComplete: CameraViewCompletion?
     var asset: PHAsset!
+    
+    var animationDuration: NSTimeInterval = 0.5
+    var animationSpring: CGFloat = 0.5
+    var rotateAnimation: UIViewAnimationOptions = .CurveLinear
     
     var confirmButtonEdgeOneConstraint: NSLayoutConstraint?
     var confirmButtonGravityConstraint: NSLayoutConstraint?
@@ -28,13 +33,13 @@ class ConfirmViewController: UIViewController {
     var cameraOverlayEdgeTwoConstraint: NSLayoutConstraint?
     var cameraOverlayWidthConstraint: NSLayoutConstraint?
     var cameraOverlayCenterConstraint: NSLayoutConstraint?
-
+    
     let imageView : UIImageView = {
         let imageView = UIImageView()
         imageView.translatesAutoresizingMaskIntoConstraints = false
         return imageView
     }()
-
+    
     let scrollView : UIScrollView = {
         let scrollView = UIScrollView()
         scrollView.translatesAutoresizingMaskIntoConstraints = false
@@ -42,11 +47,11 @@ class ConfirmViewController: UIViewController {
     }()
     
     let loaderView : UIActivityIndicatorView = {
-       let loaderView = UIActivityIndicatorView()
+        let loaderView = UIActivityIndicatorView()
         loaderView.translatesAutoresizingMaskIntoConstraints = false
         return loaderView
     }()
-
+    
     let confirmButton : UIButton = {
         let button = UIButton()
         button.translatesAutoresizingMaskIntoConstraints = false
@@ -56,7 +61,7 @@ class ConfirmViewController: UIViewController {
                         forState: .Normal)
         return button
     }()
-
+    
     let cancelButton : UIButton = {
         let button = UIButton()
         button.translatesAutoresizingMaskIntoConstraints = false
@@ -73,54 +78,15 @@ class ConfirmViewController: UIViewController {
         cameraOverlay.hidden = false
         return cameraOverlay
     }()
-
+    
     internal override func prefersStatusBarHidden() -> Bool {
         return true
     }
-
+    
     internal override func preferredStatusBarUpdateAnimation() -> UIStatusBarAnimation {
         return UIStatusBarAnimation.Slide
     }
-=======
-public class ConfirmViewController: UIViewController, UIScrollViewDelegate {
     
-    let imageView = UIImageView()
-    @IBOutlet weak var scrollView: UIScrollView!
-    @IBOutlet weak var cropOverlay: CropOverlay!
-    @IBOutlet weak var cancelButton: UIButton!
-    @IBOutlet weak var confirmButton: UIButton!
-    @IBOutlet weak var centeringView: UIView!
-    
-    var allowsCropping: Bool = false
-    var verticalPadding: CGFloat = 30
-    var horizontalPadding: CGFloat = 30
-    
-    public var onComplete: CameraViewCompletion?
-    
-    var asset: PHAsset!
-    
-    public init(asset: PHAsset, allowsCropping: Bool) {
-        self.allowsCropping = allowsCropping
-        self.asset = asset
-        super.init(nibName: "ConfirmViewController", bundle: CameraGlobals.shared.bundle)
-    }
-    
-    public required init?(coder aDecoder: NSCoder) {
-        super.init(coder: aDecoder)
-    }
-    
-    public override func prefersStatusBarHidden() -> Bool {
-        return true
-    }
-    
-    public override func preferredStatusBarUpdateAnimation() -> UIStatusBarAnimation {
-        return UIStatusBarAnimation.Slide
-    }
-    
-    public override func viewDidLoad() {
-        super.viewDidLoad()
->>>>>>> AlexLittlejohn/master
-
     override func loadView() {
         super.loadView()
         view.backgroundColor = UIColor.blackColor()
@@ -138,9 +104,9 @@ public class ConfirmViewController: UIViewController, UIScrollViewDelegate {
         buttonActions()
         fetchImage()
     }
-
+    
     override func updateViewConstraints() {
-
+        
         if !didUpdateViews {
             configScrollViewConstraints()
             configImageViewConstraints()
@@ -149,9 +115,10 @@ public class ConfirmViewController: UIViewController, UIScrollViewDelegate {
         }
         
         let padding : CGFloat = 16.0
-        let portrait = UIApplication.sharedApplication().statusBarOrientation.isPortrait
+        let statusBarOrientation = UIApplication.sharedApplication().statusBarOrientation
+        let portrait = statusBarOrientation.isPortrait
         let paddingOverlay : CGFloat = portrait ? padding : -padding
-
+        
         view.autoRemoveConstraint(confirmButtonGravityConstraint)
         view.autoRemoveConstraint(confirmButtonEdgeOneConstraint)
         
@@ -162,26 +129,28 @@ public class ConfirmViewController: UIViewController, UIScrollViewDelegate {
         
         configCameraOverlayEdgeOneContraint(portrait, padding: paddingOverlay)
         configCameraOverlayEdgeTwoConstraint(portrait, padding: paddingOverlay)
-
+        
         configCameraOverlayWidthConstraint(portrait)
         configCameraOverlayCenterConstraint(portrait)
         
         configButtonsEdgeConstraint(&confirmButtonEdgeOneConstraint,
                                     item: confirmButton,
-                                    portrait: portrait,
-                                    padding: paddingOverlay)
-        configConfirmGravityButtonConstraint(portrait, padding: paddingOverlay)
+                                    statusBarOrientation: statusBarOrientation,
+                                    basePadding: paddingOverlay)
+        configConfirmGravityButtonConstraint(statusBarOrientation, basePadding: paddingOverlay)
         
         configButtonsEdgeConstraint(&cancelButtonEdgeOneConstraint,
                                     item: cancelButton,
-                                    portrait: portrait,
-                                    padding: paddingOverlay)
-        configCancelGravityButtonConstraint(portrait, padding: paddingOverlay)
+                                    statusBarOrientation: statusBarOrientation,
+                                    basePadding: paddingOverlay)
+        configCancelGravityButtonConstraint(statusBarOrientation, basePadding: paddingOverlay)
+        
+        rotate(statusBarOrientation)
         
         super.updateViewConstraints()
     }
     
-    public override func viewWillLayoutSubviews() {
+    override func viewWillLayoutSubviews() {
         super.viewWillLayoutSubviews()
         let scale = calculateMinimumScale(view.frame.size)
         let frame = allowsCropping ? cameraOverlay.frame : view.bounds
@@ -192,7 +161,25 @@ public class ConfirmViewController: UIViewController, UIScrollViewDelegate {
         centerScrollViewContents()
         centerImageViewOnRotate()
     }
-
+    
+    /**
+     * This method will disable the rotation of the
+     */
+    override internal func viewWillTransitionToSize(size: CGSize, withTransitionCoordinator coordinator: UIViewControllerTransitionCoordinator) {
+        super.viewWillTransitionToSize(size, withTransitionCoordinator: coordinator)
+        lastInterfaceOrientation = UIApplication.sharedApplication().statusBarOrientation
+        if animationRunning {
+            return
+        }
+        CATransaction.begin()
+        CATransaction.setDisableActions(true)
+        coordinator.animateAlongsideTransition({ animation in
+            self.view.setNeedsUpdateConstraints()
+            }, completion: { _ in
+                CATransaction.commit()
+        })
+    }
+    
     /**
      * Pin all edges of ScrollView on superview edges.
      */
@@ -208,7 +195,7 @@ public class ConfirmViewController: UIViewController, UIScrollViewDelegate {
                 constant: 0))
         })
     }
-
+    
     /**
      * Pin all edges of ImageView on ScrollView edges.
      */
@@ -224,7 +211,7 @@ public class ConfirmViewController: UIViewController, UIScrollViewDelegate {
                 constant: 0))
         })
     }
-
+    
     func configLoadingViewConstraints() {
         [.CenterX, .CenterY].forEach({
             view.addConstraint(NSLayoutConstraint(
@@ -238,57 +225,51 @@ public class ConfirmViewController: UIViewController, UIScrollViewDelegate {
         })
     }
     
-<<<<<<< HEAD
     /**
      * Define the position of the ConfirmButton on the
      * left side of superview, this method will try to
      * center the view to the center of superview and
      * move to the left if necessary.
      */
-    func configConfirmGravityButtonConstraint(portrait: Bool, padding: CGFloat) {
-        confirmButtonGravityConstraint = NSLayoutConstraint(
-            item: confirmButton,
-            attribute: portrait ? .Right : .Top,
-            relatedBy: .LessThanOrEqual,
-            toItem: view,
-            attribute: portrait ? .CenterX : .CenterY,
-            multiplier: 1.0,
-            constant: -padding)
-        view.addConstraint(confirmButtonGravityConstraint!)
-=======
-    public override func viewWillTransitionToSize(size: CGSize, withTransitionCoordinator coordinator: UIViewControllerTransitionCoordinator) {
-        super.viewWillTransitionToSize(size, withTransitionCoordinator: coordinator)
+    func configConfirmGravityButtonConstraint(statusBarOrientation : UIInterfaceOrientation,
+                                              basePadding: CGFloat) {
         
-        let scale = calculateMinimumScale(size)
-        var frame = view.bounds
+        let attributeOne : NSLayoutAttribute
+        let attributeTwo : NSLayoutAttribute
+        let padding : CGFloat
         
-        if allowsCropping {
-            frame = cropOverlay.frame
-            let centeringFrame = centeringView.frame
-            var origin: CGPoint
-            
-            if size.width > size.height { // landscape
-                let offset = (size.width - centeringFrame.height)
-                let expectedX = (centeringFrame.height/2 - frame.height/2) + offset
-                origin = CGPoint(x: expectedX, y: frame.origin.x)
-            } else {
-                let expectedY = (centeringFrame.width/2 - frame.width/2)
-                origin = CGPoint(x: frame.origin.y, y: expectedY)
-            }
-            
-            frame.origin = origin
-        } else {
-            frame.size = size
+        switch statusBarOrientation {
+        case .Portrait:
+            attributeOne = .Right
+            attributeTwo = .CenterX
+            padding = -basePadding
+            break
+        case .LandscapeRight:
+            attributeOne = .Top
+            attributeTwo = .CenterY
+            padding = -basePadding
+            break
+        case .LandscapeLeft:
+            attributeOne = .Bottom
+            attributeTwo = .CenterY
+            padding = basePadding
+            break
+        default:
+            attributeOne = .Left
+            attributeTwo = .CenterX
+            padding = basePadding
+            break
         }
         
-        coordinator.animateAlongsideTransition({ context in
-            self.scrollView.contentInset = self.calculateScrollViewInsets(frame)
-            self.scrollView.minimumZoomScale = scale
-            self.scrollView.zoomScale = scale
-            self.centerScrollViewContents()
-            self.centerImageViewOnRotate()
-            }, completion: nil)
->>>>>>> AlexLittlejohn/master
+        confirmButtonGravityConstraint = NSLayoutConstraint(
+            item: confirmButton,
+            attribute: attributeOne,
+            relatedBy: .LessThanOrEqual,
+            toItem: view,
+            attribute: attributeTwo,
+            multiplier: 1.0,
+            constant: padding)
+        view.addConstraint(confirmButtonGravityConstraint!)
     }
     
     /**
@@ -297,13 +278,42 @@ public class ConfirmViewController: UIViewController, UIScrollViewDelegate {
      * center the view to the center of superview and
      * move to the right if necessary.
      */
-    func configCancelGravityButtonConstraint(portrait: Bool, padding: CGFloat) {
+    func configCancelGravityButtonConstraint(statusBarOrientation : UIInterfaceOrientation,
+                                             basePadding: CGFloat) {
+        
+        let attributeOne : NSLayoutAttribute
+        let attributeTwo : NSLayoutAttribute
+        let padding : CGFloat
+        
+        switch statusBarOrientation {
+        case .Portrait:
+            attributeOne = .Left
+            attributeTwo = .CenterX
+            padding = basePadding
+            break
+        case .LandscapeRight:
+            attributeOne = .Bottom
+            attributeTwo = .CenterY
+            padding = basePadding
+            break
+        case .LandscapeLeft:
+            attributeOne = .Top
+            attributeTwo = .CenterY
+            padding = -basePadding
+            break
+        default:
+            attributeOne = .Right
+            attributeTwo = .CenterX
+            padding = -basePadding
+            break
+        }
+        
         cancelButtonGravityConstraint = NSLayoutConstraint(
             item: cancelButton,
-            attribute: portrait ? .Left : .Bottom,
+            attribute: attributeOne,
             relatedBy: .LessThanOrEqual,
             toItem: view,
-            attribute: portrait ? .CenterX : .CenterY,
+            attribute: attributeTwo,
             multiplier: 1.0,
             constant: padding)
         view.addConstraint(cancelButtonGravityConstraint!)
@@ -317,8 +327,32 @@ public class ConfirmViewController: UIViewController, UIScrollViewDelegate {
      * pin it on the left side of superview.
      */
     func configButtonsEdgeConstraint(inout contraint: NSLayoutConstraint?,
-                                           item: UIView, portrait: Bool, padding: CGFloat) {
-        let attribute : NSLayoutAttribute = portrait ? .Bottom : .Left
+                                           item: UIView,
+                                           statusBarOrientation : UIInterfaceOrientation,
+                                           basePadding: CGFloat) {
+        
+        let attribute : NSLayoutAttribute
+        let padding : CGFloat
+        
+        switch statusBarOrientation {
+        case .Portrait:
+            attribute = .Bottom
+            padding = -basePadding
+            break
+        case .LandscapeRight:
+            attribute = .Right
+            padding = basePadding
+            break
+        case .LandscapeLeft:
+            attribute = .Left
+            padding = -basePadding
+            break
+        default:
+            attribute = .Top
+            padding = basePadding
+            break
+        }
+        
         contraint = NSLayoutConstraint(
             item: item,
             attribute: attribute,
@@ -326,7 +360,7 @@ public class ConfirmViewController: UIViewController, UIScrollViewDelegate {
             toItem: view,
             attribute: attribute,
             multiplier: 1.0,
-            constant: -padding)
+            constant: padding)
         view.addConstraint(contraint!)
     }
     
@@ -481,7 +515,7 @@ public class ConfirmViewController: UIViewController, UIScrollViewDelegate {
         scrollView.delegate = self
         scrollView.maximumZoomScale = 1
     }
-  
+    
     func fetchImage() {
         
         guard asset != nil else {
@@ -523,8 +557,8 @@ public class ConfirmViewController: UIViewController, UIScrollViewDelegate {
     }
     
     private func buttonActions() {
-        confirmButton.action = { [weak self] in self?.confirmPhoto() }
-        cancelButton.action = { [weak self] in self?.cancel() }
+        confirmButton.addTarget(self, action: #selector(ConfirmViewController.confirmPhoto), forControlEvents: UIControlEvents.TouchUpInside)
+        cancelButton.addTarget(self, action: #selector(ConfirmViewController.cancel), forControlEvents: UIControlEvents.TouchUpInside)
     }
     
     internal func cancel() {
@@ -547,7 +581,7 @@ public class ConfirmViewController: UIViewController, UIScrollViewDelegate {
             }
             .onFailure { error in
                 self.hideSpinner()
-//                self.showNoImageScreen(error)
+                //                self.showNoImageScreen(error)
             }
             .setAsset(asset)
         
@@ -571,19 +605,61 @@ public class ConfirmViewController: UIViewController, UIScrollViewDelegate {
         fetcher.fetch()
     }
     
-<<<<<<< HEAD
+    /**
+     * This method will rotate the buttons based on
+     * the last and actual orientation of the device.
+     */
+    internal func rotate(actualInterfaceOrientation: UIInterfaceOrientation) {
+        
+        if lastInterfaceOrientation != nil {
+            let lastTransform = CGAffineTransformMakeRotation(CGFloat(radians(currentRotation(
+                lastInterfaceOrientation!, newOrientation: actualInterfaceOrientation))))
+            self.setTransform(lastTransform)
+        }
+        
+        let transform = CGAffineTransformMakeRotation(0)
+        animationRunning = true
+        
+        /**
+         * Dispach delay to avoid any conflict between the CATransaction of rotation of the screen
+         * and CATransaction of animation of buttons.
+         */
+        let time = dispatch_time(dispatch_time_t(DISPATCH_TIME_NOW), 1 * Int64(NSEC_PER_SEC)/10)
+        dispatch_after(time, dispatch_get_main_queue()) {
+            
+            CATransaction.begin()
+            CATransaction.setDisableActions(false)
+            CATransaction.commit()
+            
+            UIView.animateWithDuration(
+                self.animationDuration,
+                delay: 0.1,
+                usingSpringWithDamping: self.animationSpring,
+                initialSpringVelocity: 0,
+                options: self.rotateAnimation,
+                animations: {
+                    self.setTransform(transform)
+                }, completion: { _ in
+                    self.animationRunning = false
+            })
+            
+        }
+    }
+    
+    func setTransform(transform: CGAffineTransform) {
+        self.confirmButton.transform = transform
+        self.cancelButton.transform = transform
+    }
+    
 }
 
 extension ConfirmViewController : UIScrollViewDelegate {
     
     internal func viewForZoomingInScrollView(scrollView: UIScrollView) -> UIView? {
-=======
-    public func viewForZoomingInScrollView(scrollView: UIScrollView) -> UIView? {
->>>>>>> AlexLittlejohn/master
         return imageView
     }
     
-    public func scrollViewDidZoom(scrollView: UIScrollView) {
+    internal func scrollViewDidZoom(scrollView: UIScrollView) {
         centerScrollViewContents()
     }
     
