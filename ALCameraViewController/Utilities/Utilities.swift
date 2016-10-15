@@ -9,43 +9,59 @@
 import UIKit
 import AVFoundation
 
-internal func radians(degrees: Double) -> Double {
+internal func radians(_ degrees: Double) -> Double {
     return degrees / 180 * M_PI
 }
 
-internal func localizedString(key: String) -> String {
+internal func localizedString(_ key: String) -> String {
     return NSLocalizedString(key, tableName: CameraGlobals.shared.stringsTable, bundle: CameraGlobals.shared.bundle, comment: key)
 }
 
-internal func currentRotation() -> Double {
-    var rotation: Double = 0
-    
-    if UIDevice.currentDevice().orientation == .LandscapeLeft {
-        rotation = 90
-    } else if UIDevice.currentDevice().orientation == .LandscapeRight {
-        rotation = 270
-    } else if UIDevice.currentDevice().orientation == .PortraitUpsideDown {
-        rotation = 180
+internal func currentRotation(_ oldOrientation: UIInterfaceOrientation, newOrientation: UIInterfaceOrientation) -> Double {
+    switch oldOrientation {
+        case .portrait:
+            switch newOrientation {
+                case .landscapeLeft: return 90
+                case .landscapeRight: return -90
+                case .portraitUpsideDown: return 180
+                default: return 0
+            }
+            
+        case .landscapeLeft:
+            switch newOrientation {
+                case .portrait: return -90
+                case .landscapeRight: return 180
+                case .portraitUpsideDown: return 90
+                default: return 0
+            }
+            
+        case .landscapeRight:
+            switch newOrientation {
+                case .portrait: return 90
+                case .landscapeLeft: return 180
+                case .portraitUpsideDown: return -90
+                default: return 0
+            }
+            
+        default: return 0
     }
-    
-    return rotation
 }
 
 internal func largestPhotoSize() -> CGSize {
-    let scale = UIScreen.mainScreen().scale
-    let screenSize = UIScreen.mainScreen().bounds.size
+    let scale = UIScreen.main.scale
+    let screenSize = UIScreen.main.bounds.size
     let size = CGSize(width: screenSize.width * scale, height: screenSize.height * scale)
     return size
 }
 
-internal func errorWithKey(key: String, domain: String) -> NSError {
+internal func errorWithKey(_ key: String, domain: String) -> NSError {
     let errorString = localizedString(key)
     let errorInfo = [NSLocalizedDescriptionKey: errorString]
     let error = NSError(domain: domain, code: 0, userInfo: errorInfo)
     return error
 }
 
-internal func normalizedRect(rect: CGRect, orientation: UIImageOrientation) -> CGRect {
+internal func normalizedRect(_ rect: CGRect, orientation: UIImageOrientation) -> CGRect {
     let normalizedX = rect.origin.x
     let normalizedY = rect.origin.y
     
@@ -55,28 +71,49 @@ internal func normalizedRect(rect: CGRect, orientation: UIImageOrientation) -> C
     var normalizedRect: CGRect
     
     switch orientation {
-    case .Up, .UpMirrored:
+    case .up, .upMirrored:
         normalizedRect = CGRect(x: normalizedX, y: normalizedY, width: normalizedWidth, height: normalizedHeight)
-    case .Down, .DownMirrored:
+    case .down, .downMirrored:
         normalizedRect = CGRect(x: 1-normalizedX-normalizedWidth, y: 1-normalizedY-normalizedHeight, width: normalizedWidth, height: normalizedHeight)
-    case .Left, .LeftMirrored:
+    case .left, .leftMirrored:
         normalizedRect = CGRect(x: 1-normalizedY-normalizedHeight, y: normalizedX, width: normalizedHeight, height: normalizedWidth)
-    case .Right, .RightMirrored:
+    case .right, .rightMirrored:
         normalizedRect = CGRect(x: normalizedY, y: 1-normalizedX-normalizedWidth, width: normalizedHeight, height: normalizedWidth)
     }
     
     return normalizedRect
 }
 
-internal func flashImage(mode: AVCaptureFlashMode) -> String {
+internal func flashImage(_ mode: AVCaptureFlashMode) -> String {
     let image: String
     switch mode {
-    case .Auto:
+    case .auto:
         image = "flashAutoIcon"
-    case .On:
+    case .on:
         image = "flashOnIcon"
-    case .Off:
+    case .off:
         image = "flashOffIcon"
     }
     return image
+}
+
+struct ScreenSize {
+    static let SCREEN_WIDTH         = UIScreen.main.bounds.size.width
+    static let SCREEN_HEIGHT        = UIScreen.main.bounds.size.height
+    static let SCREEN_MAX_LENGTH    = max(ScreenSize.SCREEN_WIDTH, ScreenSize.SCREEN_HEIGHT)
+}
+
+struct DeviceConfig {
+    static let SCREEN_MULTIPLIER : CGFloat = {
+        if UIDevice.current.userInterfaceIdiom == .phone {
+            switch ScreenSize.SCREEN_MAX_LENGTH {
+                case 568.0: return 1.5
+                case 667.0: return 2.0
+                case 736.0: return 4.0
+                default: return 1.0
+            }
+        } else {
+            return 1.0
+        }
+    }()
 }
